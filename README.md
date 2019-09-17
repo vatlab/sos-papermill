@@ -10,3 +10,6 @@ pip install sos-papermill
 
 ## Usage
 
+```
+papermill --engine sos [other options]
+```

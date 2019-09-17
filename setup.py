@@ -3,6 +3,7 @@
 # Copyright (c) Bo Peng and the University of Texas MD Anderson Cancer Center
 # Distributed under the terms of the 3-clause BSD License.
 
+import os
 import sys
 
 from setuptools import find_packages, setup
@@ -22,10 +23,15 @@ with open('src/sos_papermill/_version.py') as version:
             __version__ = eval(line.split('=')[1])
             break
 
-description = '''\
-SoS execution engine for papermill, allowing SoS Notebooks to be executed
-in batch mode.
-'''
+# Get the long description from the README file
+local_path = os.path.dirname(__file__)
+# Fix for tox which manipulates execution pathing
+if not local_path:
+    local_path = '.'
+here = os.path.abspath(local_path)
+
+with open(os.path.join(here, 'README.md'), encoding='utf-8') as f:
+    description = f.read()
 
 
 setup(
@@ -63,5 +69,9 @@ setup(
     install_requires=[
         'papermill',
         'sos-notebook',
-    ]
+    ],
+    entry_points = '''
+[papermill.engine]
+sos = sos_papermill.engine:SoSExecutorEngine
+    '''
 )
