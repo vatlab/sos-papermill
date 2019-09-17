@@ -21,12 +21,14 @@ class SoSPaperMillPreprocessor(PapermillExecutePreprocessor):
         self._filename = filename
 
     def _prepare_meta(self, cell):
+        if not hasattr(cell.metadata, 'kernel'):
+            cell.metadata['kernel'] = 'SoS'
         meta = {
             'use_panel': False,
             'cell_id': '0',
             'path': self._filename,
             'batch_mode': True,
-            'cell_kernel': cell.metadata.kernel if hasattr(cell.metadata, 'kernel') else 'SoS'
+            'cell_kernel': cell.metadata.kernel
             }
         if re.search(
             r'^%sosrun($|\s)|^%sossave($|\s)|^%preview\s.*(-w|--workflow).*$',
@@ -53,7 +55,7 @@ class SoSPaperMillPreprocessor(PapermillExecutePreprocessor):
 
         #  msg_id = self.kc.execute(cell.source)
 
-        self.log.debug("Executing cell:\n%s", cell.source)
+        self.log.debug(f"Executing cell {cell_index} with kernel {content['sos']['cell_kernel']}:\n{cell.source}")
         exec_reply = self._wait_for_reply(msg_id, cell)
 
         outs = cell.outputs = []
