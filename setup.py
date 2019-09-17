@@ -33,7 +33,6 @@ here = os.path.abspath(local_path)
 with open(os.path.join(here, 'README.md'), encoding='utf-8') as f:
     description = f.read()
 
-
 setup(
     name="sos-papermill",
     version=__version__,
@@ -70,8 +69,7 @@ setup(
         'papermill',
         'sos-notebook',
     ],
-    entry_points = '''
+    entry_points='''
 [papermill.engine]
 sos = sos_papermill.engine:SoSExecutorEngine
-    '''
-)
+''')

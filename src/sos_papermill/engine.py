@@ -9,23 +9,22 @@ from papermill.log import logger
 
 from sos_notebook.converter import SoS_ExecutePreprocessor
 
+
 class SoSExecutorEngine(Engine):
     """
     A notebook engine representing an extended nbconvert process to execute SoS Notebook.
     """
 
     @classmethod
-    def execute_managed_notebook(
-        cls,
-        nb_man,
-        kernel_name,
-        log_output=False,
-        stdout_file=None,
-        stderr_file=None,
-        start_timeout=60,
-        execution_timeout=None,
-        **kwargs
-    ):
+    def execute_managed_notebook(cls,
+                                 nb_man,
+                                 kernel_name,
+                                 log_output=False,
+                                 stdout_file=None,
+                                 stderr_file=None,
+                                 start_timeout=60,
+                                 execution_timeout=None,
+                                 **kwargs):
         """
         Performs the actual execution of the parameterized notebook locally.
         Args:
@@ -46,7 +45,8 @@ class SoSExecutorEngine(Engine):
         # Nicely handle preprocessor arguments prioritizing values set by engine
         final_kwargs = merge_kwargs(
             safe_kwargs,
-            timeout=execution_timeout if execution_timeout else kwargs.get('timeout'),
+            timeout=execution_timeout
+            if execution_timeout else kwargs.get('timeout'),
             startup_timeout=start_timeout,
             kernel_name=kernel_name,
             log=logger,
@@ -54,6 +54,6 @@ class SoSExecutorEngine(Engine):
             stdout_file=stdout_file,
             stderr_file=stderr_file,
         )
-        preprocessor = SoS_ExecutePreprocessor(filename=nb_man.nb.metadata.papermill['input_path'], **final_kwargs)
+        preprocessor = SoS_ExecutePreprocessor(
+            filename=nb_man.nb.metadata.papermill['input_path'], **final_kwargs)
         preprocessor.preprocess(nb_man.nb, safe_kwargs)
-
