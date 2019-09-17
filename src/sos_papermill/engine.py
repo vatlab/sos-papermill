@@ -3,9 +3,11 @@
 # Copyright (c) Bo Peng and the University of Texas MD Anderson Cancer Center
 # Distributed under the terms of the 3-clause BSD License.
 
-from papermill.engines import PapermillEngines, Engine, PapermillExecutePreprocessor
+from papermill.engines import Engine
 from papermill.utils import merge_kwargs, remove_args
 from papermill.log import logger
+
+from sos_notebook.converter import SoS_ExecutePreprocessor
 
 class SoSExecutorEngine(Engine):
     """
@@ -52,12 +54,6 @@ class SoSExecutorEngine(Engine):
             stdout_file=stdout_file,
             stderr_file=stderr_file,
         )
-        preprocessor = PapermillExecutePreprocessor(**final_kwargs)
-        preprocessor.preprocess(nb_man, safe_kwargs)
+        preprocessor = SoS_ExecutePreprocessor(filename=nb_man.nb.metadata.papermill['input_path'], **final_kwargs)
+        preprocessor.preprocess(nb_man.nb, safe_kwargs)
 
-
-# Instantiate a PapermillEngines instance, register Handlers and entrypoints
-papermill_engines = PapermillEngines()
-papermill_engines.register(None, SoSExecutorEngine)
-papermill_engines.register('sos', SoSExecutorEngine)
-papermill_engines.register_entry_points()
