@@ -7,6 +7,7 @@ from papermill.engines import Engine
 from papermill.utils import merge_kwargs, remove_args
 from papermill.log import logger
 from papermill.preprocess import PapermillExecutePreprocessor
+from papermill.translators import papermill_translators, PythonTranslator
 
 from sos_notebook.converter import SoS_ExecutePreprocessor, extract_workflow
 
@@ -68,3 +69,7 @@ class SoSExecutorEngine(Engine):
         preprocessor = SoSPaperMillPreprocessor(
             filename=nb_man.nb.metadata.papermill['input_path'], **final_kwargs)
         preprocessor.preprocess(nb_man, safe_kwargs)
+
+
+# register Python Translater for kernel sos
+papermill_translators.register("sos", PythonTranslator)
