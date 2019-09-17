@@ -4,7 +4,7 @@
 
 # Papermill engine for SoS Notebook
 
-This is a paper mill engine for the execution of SoS Polyglot Notebook.
+This is a papermill engine for the batch execution of SoS Polyglot Notebook.
 
 ## Installation
 
