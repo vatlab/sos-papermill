@@ -12,12 +12,19 @@ This is a paper mill engine for the execution of SoS Polyglot Notebook.
 pip install sos-papermill
 ```
 
+or
+
+```
+conda install sos-papermill -c conda-forge
+```
+if you are using a conda environment.
+
 ## Usage
 
 ```
 papermill --engine sos [other options]
 ```
 
-Note that `parameters` can be defined in both `SoS` and subkernel cells. In the latter case
-the parameters should be passed in Python syntax and the parameters will be automatically
+Note that `parameters` can be defined in either a `SoS` or a subkernel cell but in both cases
+parameters should be passed in Python syntax. Parameters defined in a subkernel will be automatically
 transferred to the subkernel using a `%put` magic.
