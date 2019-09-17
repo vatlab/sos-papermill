@@ -21,8 +21,12 @@ class SoSPaperMillPreprocessor(PapermillExecutePreprocessor):
         self._filename = filename
 
     def _prepare_meta(self, cell):
+        if hasattr(cell.metadata, 'tags') and 'parameters' in cell.metadata.tags and hasattr(cell.metadata, 'kernel') and cell.metadata['kernel'] != 'SoS':
+            self.log.warning(f"Papermill parameters defined in a {cell.metadata['kernel']} cell will be injected to a SoS cell, and therefore not be handled correctly.")
+
         if not hasattr(cell.metadata, 'kernel'):
             cell.metadata['kernel'] = 'SoS'
+
         meta = {
             'use_panel': False,
             'cell_id': '0',
