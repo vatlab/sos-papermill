@@ -38,6 +38,7 @@ setup(
     version=__version__,
     description='SoS extension for papermill',
     long_description=description,
+    long_description_content_type='text/markdown',
     author='Bo Peng',
     url='https://github.com/vatlab/sos-papermill',
     author_email='bpeng@mdanderson.org',
