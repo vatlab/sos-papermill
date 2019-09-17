@@ -18,8 +18,6 @@ pip install sos-papermill
 papermill --engine sos [other options]
 ```
 
-
-## Note
-
-The `parameters` cells have to in SoS kernel because papermill will only inject SoS cells.
-A warning will be given if non-SoS parameter cells are encountered.
+Note that `parameters` can be defined in both `SoS` and subkernel cells. In the latter case
+the parameters should be passed in Python syntax and the parameters will be automatically
+transferred to the subkernel using a `%put` magic.

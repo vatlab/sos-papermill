@@ -14,18 +14,25 @@ from papermill.translators import papermill_translators, PythonTranslator
 
 from sos.converter import extract_workflow
 
+
 class SoSPaperMillPreprocessor(PapermillExecutePreprocessor):
 
     def __init__(self, filename, *args, **kwargs):
         super(SoSPaperMillPreprocessor, self).__init__(*args, **kwargs)
         self._filename = filename
+        self._params_kernel = 'SoS'
+        self._parameters = []
 
     def _prepare_meta(self, cell):
-        if hasattr(cell.metadata, 'tags') and 'parameters' in cell.metadata.tags and hasattr(cell.metadata, 'kernel') and cell.metadata['kernel'] != 'SoS':
-            self.log.warning(f"Papermill parameters defined in a {cell.metadata['kernel']} cell will be injected to a SoS cell, and therefore not be handled correctly.")
 
         if not hasattr(cell.metadata, 'kernel'):
             cell.metadata['kernel'] = 'SoS'
+
+        if hasattr(cell.metadata, 'tags'):
+            if 'parameters' in cell.metadata.tags:
+                self._params_kernel = cell.metadata['kernel']
+            if 'injected-parameters' in cell.metadata.tags and self._params_kernel != 'SoS':
+                cell.source = f'%put {" ".join(self._parameters)} --to {self._params_kernel}\n' + cell.source
 
         meta = {
             'use_panel': False,
@@ -33,15 +40,16 @@ class SoSPaperMillPreprocessor(PapermillExecutePreprocessor):
             'path': self._filename,
             'batch_mode': True,
             'cell_kernel': cell.metadata.kernel
-            }
+        }
         if re.search(
-            r'^%sosrun($|\s)|^%sossave($|\s)|^%preview\s.*(-w|--workflow).*$',
-            cell.source, re.MULTILINE):
+                r'^%sosrun($|\s)|^%sossave($|\s)|^%preview\s.*(-w|--workflow).*$',
+                cell.source, re.MULTILINE):
             meta['workflow'] = self._workflow
         return meta
 
     def run_cell(self, cell, cell_index=0, store_history=True):
         # sos is the additional meta information sent to kernel
+        sos_meta = self._prepare_meta(cell)
         content = dict(
             code=cell.source,
             silent=False,
@@ -49,7 +57,7 @@ class SoSPaperMillPreprocessor(PapermillExecutePreprocessor):
             user_expressions='',
             allow_stdin=False,
             stop_on_error=False,
-            sos=self._prepare_meta(cell))
+            sos=sos_meta)
         msg = self.kc.session.msg('execute_request', content)
         self.kc.shell_channel.send(msg)
         msg_id = msg['header']['msg_id']
@@ -59,7 +67,9 @@ class SoSPaperMillPreprocessor(PapermillExecutePreprocessor):
 
         #  msg_id = self.kc.execute(cell.source)
 
-        self.log.debug(f"Executing cell {cell_index} with kernel {content['sos']['cell_kernel']}:\n{cell.source}")
+        self.log.debug(
+            f"Executing cell {cell_index} with kernel {content['sos']['cell_kernel']}:\n{cell.source}"
+        )
         exec_reply = self._wait_for_reply(msg_id, cell)
 
         outs = cell.outputs = []
@@ -137,8 +147,11 @@ class SoSPaperMillPreprocessor(PapermillExecutePreprocessor):
 
     def preprocess(self, nbman, *args, **kwargs):
         self._workflow = extract_workflow(nbman.nb)
+        self._parameters = list(
+            nbman.nb.metadata['papermill']['parameters'].keys())
         return super(SoSPaperMillPreprocessor,
                      self).preprocess(nbman, *args, **kwargs)
+
 
 class SoSExecutorEngine(Engine):
     """
