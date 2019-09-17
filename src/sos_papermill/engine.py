@@ -6,9 +6,20 @@
 from papermill.engines import Engine
 from papermill.utils import merge_kwargs, remove_args
 from papermill.log import logger
+from papermill.preprocess import PapermillExecutePreprocessor
 
-from sos_notebook.converter import SoS_ExecutePreprocessor
+from sos_notebook.converter import SoS_ExecutePreprocessor, extract_workflow
 
+class SoSPaperMillPreprocessor(SoS_ExecutePreprocessor, PapermillExecutePreprocessor):
+    def __init__(self, filename, *args, **kwargs):
+        #
+        # Note that SoS_ExecutePreprocessor will take filename, and pass the rest to
+        # PapermillExecutePreprocessor
+        super(SoSPaperMillPreprocessor, self).__init__(filename, *args, **kwargs)
+
+    def preprocess(self, nbman, *args, **kwargs):
+        self._workflow = extract_workflow(nbman.nb)
+        return PapermillExecutePreprocessor.preprocess(self, nbman, *args, **kwargs)
 
 class SoSExecutorEngine(Engine):
     """
@@ -54,6 +65,6 @@ class SoSExecutorEngine(Engine):
             stdout_file=stdout_file,
             stderr_file=stderr_file,
         )
-        preprocessor = SoS_ExecutePreprocessor(
+        preprocessor = SoSPaperMillPreprocessor(
             filename=nb_man.nb.metadata.papermill['input_path'], **final_kwargs)
-        preprocessor.preprocess(nb_man.nb, safe_kwargs)
+        preprocessor.preprocess(nb_man, safe_kwargs)

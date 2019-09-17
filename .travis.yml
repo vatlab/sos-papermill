@@ -21,9 +21,9 @@ before_install:
     - conda create -n python_test python=$TRAVIS_PYTHON_VERSION anaconda
     - source activate python_test
     # sos and papermill
-    - conda install -c conda-forge sos sos-notebook sos-bash  papermill
+    - conda install -c conda-forge sos sos-notebook sos-bash sos-python papermill
     # test related
-    - pip install pytest nose
+    - pip install pytest nose mock
 
 sudo: required
 install: "pip install . -U"
