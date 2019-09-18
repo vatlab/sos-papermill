@@ -42,7 +42,7 @@ class SoSPaperMillPreprocessor(PapermillExecutePreprocessor):
                 cell.source = f'%put {" ".join(self._parameters)} --to {self._params_kernel}\n' + cell.source
 
         meta = {
-            'use_panel': False,
+            'use_panel': True,
             'cell_id': randomCellID(),
             'path': self._filename,
             'batch_mode': True,
@@ -101,7 +101,6 @@ class SoSPaperMillPreprocessor(PapermillExecutePreprocessor):
             msg_type = msg['msg_type']
             self.log.debug("output: %s", msg_type)
             content = msg['content']
-
             # set the prompt number for the input and the output
             if 'execution_count' in exec_reply['content']:
                 cell['execution_count'] = exec_reply['content']['execution_count']
