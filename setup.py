@@ -24,21 +24,18 @@ with open('src/sos_papermill/_version.py') as version:
             break
 
 # Get the long description from the README file
-local_path = os.path.dirname(__file__)
-# Fix for tox which manipulates execution pathing
-if not local_path:
-    local_path = '.'
-here = os.path.abspath(local_path)
+CURRENT_DIR = os.path.abspath(os.path.dirname(__file__))
 
-with open(os.path.join(here, 'README.md'), encoding='utf-8') as f:
-    description = f.read()
+def get_long_description():
+    with open(os.path.join(CURRENT_DIR, "README.md"), "r") as ld_file:
+        return ld_file.read()
 
 setup(
     name="sos-papermill",
     version=__version__,
     description='SoS extension for papermill',
-    long_description=description,
-    long_description_content_type='text/markdown',
+    long_description=get_long_description(),
+    long_description_content_type="text/markdown",
     author='Bo Peng',
     url='https://github.com/vatlab/sos-papermill',
     author_email='bpeng@mdanderson.org',
