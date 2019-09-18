@@ -14,6 +14,13 @@ from papermill.translators import papermill_translators, PythonTranslator
 
 from sos.converter import extract_workflow
 
+import random
+import string
+
+def randomCellID(stringLength=12):
+    """Generate a random string of fixed length """
+    letters = string.ascii_lowercase
+    return ''.join(random.choice(letters) for i in range(stringLength))
 
 class SoSPaperMillPreprocessor(PapermillExecutePreprocessor):
 
@@ -36,7 +43,7 @@ class SoSPaperMillPreprocessor(PapermillExecutePreprocessor):
 
         meta = {
             'use_panel': False,
-            'cell_id': '0',
+            'cell_id': randomCellID(),
             'path': self._filename,
             'batch_mode': True,
             'cell_kernel': cell.metadata.kernel
