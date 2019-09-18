@@ -98,14 +98,13 @@ class SoSPaperMillPreprocessor(PapermillExecutePreprocessor):
             if msg['parent_header'].get('msg_id') != msg_id:
                 # not an output from our execution
                 continue
-
             msg_type = msg['msg_type']
             self.log.debug("output: %s", msg_type)
             content = msg['content']
 
             # set the prompt number for the input and the output
-            if 'execution_count' in content:
-                cell['execution_count'] = content['execution_count']
+            if 'execution_count' in exec_reply['content']:
+                cell['execution_count'] = exec_reply['content']['execution_count']
 
             if msg_type == 'status':
                 if content['execution_state'] == 'idle':
