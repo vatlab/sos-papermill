@@ -65,7 +65,8 @@ setup(
     python_requires='>=3.6',
     install_requires=[
         'papermill',
-        'sos-notebook>=0.20.3',
+        'sos>=0.20.2',
+        'sos-notebook>=0.20.4'
     ],
     entry_points='''
 [papermill.engine]
