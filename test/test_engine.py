@@ -18,11 +18,18 @@ def load_notebook(notebook_name):
     nb.metadata.papermill['input_path'] = notebook_name
     return nb
 
+def get_output(cell):
+    res = ''
+    for output in cell.outputs:
+        if output['output_type'] == 'stream':
+            res += output['text']
+    return res
+
 class TestSoSExecutorEngine(unittest.TestCase):
     def test_sos_executor_engine_execute(self):
         src_nb = load_notebook('sos_python3.ipynb')
         nb = SoSExecutorEngine.execute_notebook(
-            src_nb, 'sos', output_path='foo.ipynb', progress_bar=False, log_output=True
+            src_nb, 'sos', output_path='foo.ipynb', progress_bar=False, log_output=False
         )
         self.assertIsNotNone(nb.metadata.papermill['start_time'])
         self.assertIsNotNone(nb.metadata.papermill['end_time'])
@@ -35,3 +42,4 @@ class TestSoSExecutorEngine(unittest.TestCase):
             self.assertEqual(
                 cell.metadata.papermill['status'], NotebookExecutionManager.COMPLETED
             )
+        self.assertTrue('101' in get_output(nb.cells[2]))
