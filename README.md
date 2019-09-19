@@ -23,7 +23,7 @@ conda install sos-papermill -c conda-forge
 ```
 if you are using a conda environment.
 
-Note that you will need to install [`sos-notebook`](https://github.com/vatlab/sos-notebook)) and all related kernels (e.g. `bash_kernel`, `irkernel`) and language modules (e.g. [sos-bash](https://github.com/vatlab/sos-bash), [sos-r](https://github.com/vatlab/sos-r)) to execute notebooks that use these kernels. Please refer to [Running SoS](https://vatlab.github.io/sos-docs/running.html#content) for details on how to install SoS Notebook.
+Note that you will need to install [`sos-notebook`](https://github.com/vatlab/sos-notebook), all relevant kernels (e.g. `bash_kernel`, `irkernel`) and related language modules (e.g. [sos-bash](https://github.com/vatlab/sos-bash), [sos-r](https://github.com/vatlab/sos-r)) to execute notebooks that use these kernels. Please refer to [Running SoS](https://vatlab.github.io/sos-docs/running.html#content) for details on how to install SoS Notebook.
 
 ## Documentation
 
