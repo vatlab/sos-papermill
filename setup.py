@@ -26,9 +26,11 @@ with open('src/sos_papermill/_version.py') as version:
 # Get the long description from the README file
 CURRENT_DIR = os.path.abspath(os.path.dirname(__file__))
 
+
 def get_long_description():
     with open(os.path.join(CURRENT_DIR, "README.md"), "r") as ld_file:
         return ld_file.read()
+
 
 setup(
     name="sos-papermill",
@@ -64,9 +66,9 @@ setup(
     package_dir={'': 'src'},
     python_requires='>=3.6',
     install_requires=[
-        'papermill',
+        'papermill>=2.0.0',
         'sos>=0.20.2',
-        'sos-notebook>=0.20.4'
+        'sos-notebook>=0.20.4',
     ],
     entry_points='''
 [papermill.engine]

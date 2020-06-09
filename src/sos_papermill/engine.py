@@ -6,27 +6,33 @@
 import re
 from nbformat.v4 import output_from_msg
 
-from papermill.engines import Engine
+from papermill.engines import NBClientEngine
 from papermill.utils import merge_kwargs, remove_args
 from papermill.log import logger
-from papermill.preprocess import PapermillExecutePreprocessor
-from papermill.translators import papermill_translators, PythonTranslator
+from papermill.clientwrap import PapermillNotebookClient
 
+from papermill.translators import papermill_translators, PythonTranslator
+from queue import Empty
+
+from nbclient.util import run_sync, ensure_async
 from sos.converter import extract_workflow
 
 import random
 import string
+
 
 def randomCellID(stringLength=12):
     """Generate a random string of fixed length """
     letters = string.ascii_lowercase
     return ''.join(random.choice(letters) for i in range(stringLength))
 
-class SoSPaperMillPreprocessor(PapermillExecutePreprocessor):
 
-    def __init__(self, filename, *args, **kwargs):
-        super(SoSPaperMillPreprocessor, self).__init__(*args, **kwargs)
-        self._filename = filename
+class SoSPapermillNotebookClient(PapermillNotebookClient):
+
+    def __init__(self, nb_man, km=None, raise_on_iopub_timeout=True, **kw):
+        super(SoSPapermillNotebookClient, self).__init__(
+            nb_man, km=km, raise_on_iopub_timeout=raise_on_iopub_timeout, **kw)
+        self._filename = nb_man.nb.metadata.papermill['input_path']
         self._params_kernel = 'SoS'
         self._parameters = []
 
@@ -54,9 +60,21 @@ class SoSPaperMillPreprocessor(PapermillExecutePreprocessor):
             meta['workflow'] = self._workflow
         return meta
 
-    def run_cell(self, cell, cell_index=0, store_history=True):
+    async def async_execute_cell(self,
+                                 cell,
+                                 cell_index=0,
+                                 execution_count=None,
+                                 store_history=True):
         # sos is the additional meta information sent to kernel
+        if cell.cell_type != 'code' or not cell.source.strip():
+            self.log.debug("Skipping non-executing cell %s", cell_index)
+            return cell
+
+        if self.record_timing and 'execution' not in cell['metadata']:
+            cell['metadata']['execution'] = {}
+
         sos_meta = self._prepare_meta(cell)
+
         content = dict(
             code=cell.source,
             silent=False,
@@ -71,15 +89,18 @@ class SoSPaperMillPreprocessor(PapermillExecutePreprocessor):
 
         # the reset is copied from https://github.com/jupyter/nbconvert/blob/master/nbconvert/preprocessors/execute.py
         # because we only need to change the first line
-
-        #  msg_id = self.kc.execute(cell.source)
+        # msg_id = self.kc.execute(cell.source)
 
         self.log.debug(
             f"Executing cell {cell_index} with kernel {content['sos']['cell_kernel']}:\n{cell.source}"
         )
-        exec_reply = self._wait_for_reply(msg_id, cell)
+        exec_reply = await self.async_wait_for_reply(msg_id, cell)
 
-        outs = cell.outputs = []
+        self.code_cells_executed += 1
+        exec_timeout = self._get_timeout(cell)
+
+        cell.outputs = []
+        self.clear_before_next_output = False
 
         while True:
             try:
@@ -88,7 +109,8 @@ class SoSPaperMillPreprocessor(PapermillExecutePreprocessor):
                 # in certain CI systems, waiting < 1 second might miss messages.
                 # So long as the kernel sends a status:idle message when it
                 # finishes, we won't actually have to wait this long, anyway.
-                msg = self.kc.iopub_channel.get_msg(timeout=self.iopub_timeout)
+                msg = await ensure_async(
+                    self.kc.iopub_channel.get_msg(timeout=self.iopub_timeout))
             except Empty:
                 self.log.warning("Timeout waiting for IOPub output")
                 if self.raise_on_iopub_timeout:
@@ -103,7 +125,8 @@ class SoSPaperMillPreprocessor(PapermillExecutePreprocessor):
             content = msg['content']
             # set the prompt number for the input and the output
             if 'execution_count' in exec_reply['content']:
-                cell['execution_count'] = exec_reply['content']['execution_count']
+                cell['execution_count'] = exec_reply['content'][
+                    'execution_count']
 
             if msg_type == 'status':
                 if content['execution_state'] == 'idle':
@@ -113,7 +136,7 @@ class SoSPaperMillPreprocessor(PapermillExecutePreprocessor):
             elif msg_type == 'execute_input':
                 continue
             elif msg_type == 'clear_output':
-                outs[:] = []
+                cell.outputs[:] = []
                 # clear display_id mapping for this cell
                 for display_id, cell_map in self._display_id_map.items():
                     if cell_index in cell_map:
@@ -144,21 +167,22 @@ class SoSPaperMillPreprocessor(PapermillExecutePreprocessor):
                 #   _display_id_map[display_id][cell_idx]
                 cell_map = self._display_id_map.setdefault(display_id, {})
                 output_idx_list = cell_map.setdefault(cell_index, [])
-                output_idx_list.append(len(outs))
+                output_idx_list.append(len(cell.outputs))
 
-            outs.append(out)
+            cell.outputs.append(out)
 
-        return exec_reply, outs
+        return cell
 
-    def preprocess(self, nbman, *args, **kwargs):
-        self._workflow = extract_workflow(nbman.nb)
+    execute_cell = run_sync(async_execute_cell)
+
+    def execute(self, **kwargs):
+        self._workflow = extract_workflow(self.nb_man.nb)
         self._parameters = list(
-            nbman.nb.metadata['papermill']['parameters'].keys())
-        return super(SoSPaperMillPreprocessor,
-                     self).preprocess(nbman, *args, **kwargs)
+            self.nb_man.nb.metadata['papermill']['parameters'].keys())
+        return super(SoSPapermillNotebookClient, self).execute(**kwargs)
 
 
-class SoSExecutorEngine(Engine):
+class SoSExecutorEngine(NBClientEngine):
     """
     A notebook engine representing an extended nbconvert process to execute SoS Notebook.
     """
@@ -189,7 +213,6 @@ class SoSExecutorEngine(Engine):
 
         # Exclude parameters that named differently downstream
         safe_kwargs = remove_args(['timeout', 'startup_timeout'], **kwargs)
-
         # Nicely handle preprocessor arguments prioritizing values set by engine
         final_kwargs = merge_kwargs(
             safe_kwargs,
@@ -202,9 +225,7 @@ class SoSExecutorEngine(Engine):
             stdout_file=stdout_file,
             stderr_file=stderr_file,
         )
-        preprocessor = SoSPaperMillPreprocessor(
-            filename=nb_man.nb.metadata.papermill['input_path'], **final_kwargs)
-        preprocessor.preprocess(nb_man, safe_kwargs)
+        return SoSPapermillNotebookClient(nb_man, **final_kwargs).execute()
 
 
 # register Python Translater for kernel sos
