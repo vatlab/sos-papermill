@@ -2,7 +2,7 @@
 [![Build Status](https://travis-ci.org/vatlab/sos-papermill.svg?branch=master)](https://travis-ci.org/vatlab/sos-papermill)
 
 
-# Papermill engine for SoS Notebook
+# sos-papermill: Batch execution of SoS Notebooks using papermill
 
 [papermill](https://github.com/nteract/papermill) is a tool for parameterizing, executing, and analyzing Jupyter Notebooks. It lets you parameterize and execute notebooks in batch mode.
 
