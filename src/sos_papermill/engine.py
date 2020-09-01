@@ -44,8 +44,14 @@ class SoSPapermillNotebookClient(PapermillNotebookClient):
         if hasattr(cell.metadata, 'tags'):
             if 'parameters' in cell.metadata.tags:
                 self._params_kernel = cell.metadata['kernel']
-            if 'injected-parameters' in cell.metadata.tags and self._params_kernel != 'SoS':
-                cell.source = f'%put {" ".join(self._parameters)} --to {self._params_kernel}\n' + cell.source
+            if 'injected-parameters' in cell.metadata.tags:
+                if self._params_kernel != 'SoS':
+                    cell.source = f'%put {" ".join(self._parameters)} --to {self._params_kernel}\n' + cell.source
+                cell.metadata['collapsed'] = True
+                if 'jupyter' not in cell.metadata:
+                    cell.metadata['jupyter'] = {}
+                cell.metadata['jupyter']['outputs_hidden'] = True
+                cell.metadata['jupyter']['source_hidden'] = True
 
         meta = {
             'use_panel': True,
